@@ -12,6 +12,9 @@ namespace Zadatak_1
         static int numberOfParticipants;
         static Thread[] threads;
         static Thread generator;
+        static Random random = new Random();
+        static object locker = new object();
+        static bool guessed = false;
         /// <summary>
         /// This method sets number of participants and guessing number based on user input, and then starts thread which perform generating another threads.
         /// </summary>
@@ -39,7 +42,7 @@ namespace Zadatak_1
             generator = new Thread(CreatingParticipants);
             generator.Name = "Thread_Generator";
             generator.Start();
-            Console.WriteLine("Number of users and guessed number is selected. Number of players is {0}.", numberOfParticipants);
+            Console.WriteLine("Number of players and guessed number are selected. Number of players is {0}.", numberOfParticipants);
         }
         /// <summary>
         /// This method creating threads which number is equal to number of participants
@@ -53,15 +56,48 @@ namespace Zadatak_1
             {
                 Thread t = new Thread(GuessNumber)
                 {
-                    Name = string.Format("User_{0}", i + 1)
+                    Name = string.Format("Player_{0}", i + 1)
                 };
                 threads[i] = t;
             }
         }
+        /// <summary>
+        /// This method generates random number, compare that number with guessing number and then displays feedback on console about that action. 
+        /// </summary>
         static void GuessNumber()
         {
-
+            //repeating generating a random number and comparing with guessing number while the number is not guessed
+            do
+            {
+                //locking block of code, that only one participant can guess the number in the same time                
+                lock (locker)
+                {
+                    Thread.Sleep(100);
+                    if (!guessed)
+                    {
+                        int number = random.Next(1, 101);
+                        if (number == numberToGuess)
+                        {
+                            Console.WriteLine("{0} won and guessed number was {1}.", Thread.CurrentThread.Name, numberToGuess);
+                            guessed = true;
+                        }
+                        else
+                        {
+                            Console.WriteLine("{0} was trying to guess {1}.", Thread.CurrentThread.Name, number);
+                            //if both numbers have the same parity, displays information about that
+                            if (number % 2 == numberToGuess % 2)
+                            {
+                                Console.WriteLine("{0} guessed the parity of number!", Thread.CurrentThread.Name);
+                            }
+                        }
+                    }
+                }
+            } while (!guessed);
         }
+        /// <summary>
+        /// This method manages the performing of threads.
+        /// </summary>
+        /// <param name="args"></param>
         static void Main(string[] args)
         {
             Thread askForInput = new Thread(GetInputFromConsole);
